@@ -121,8 +121,8 @@ export default function App() {
           const hasLogged = logs.slice(0, 30).some(l => l.message.includes(person.name) && l.message.includes('Personnel in Danger'));
           
           if (!hasLogged) {
-            addLog(`Personnel in Danger: ${person.name} detected at ${person.status}`, 'Critical', person.status);
-            speak(`Warning. Personnel in danger. ${person.name} location compromised.`);
+            addLog(`Personale in Pericolo: ${person.name} rilevato presso ${person.status}`, 'Critical', person.status);
+            speak(`Attenzione. Personale in pericolo. Posizione di ${person.name} compromessa.`);
             playSound('alert');
           }
         }
@@ -172,8 +172,8 @@ export default function App() {
             if (dist < 5) {
               setActivePowerNodes(prevNodes => {
                 if (prevNodes.includes(node.id)) {
-                  addLog(`CRITICAL: ${dino.species} DAMAGED FEEDER AT ${node.id}`, 'Critical', 'Power Grid');
-                  speak(`Warning. Power failure at ${node.id}. Animal activity damaging grid lines.`);
+                  addLog(`CRITICO: ${dino.species} HA DANNEGGIATO L'ALIMENTATORE A ${node.id}`, 'Critical', 'Power Grid');
+                  speak(`Attenzione. Guasto energetico al nodo ${node.id}. Attività animale rilevata sulle linee di distribuzione.`);
                   playSound('alert');
                   setIsPowerLossVisible(true);
                   return prevNodes.filter(id => id !== node.id);
@@ -194,7 +194,7 @@ export default function App() {
     const newState = !isHyperloopActive;
     setIsHyperloopActive(newState);
     addLog(
-      newState ? 'HYPERLOOP SYSTEM RE-ACTIVATED' : 'HYPERLOOP SYSTEM EMERGENCY SHUTDOWN',
+      newState ? 'SISTEMA HYPERLOOP RIATTIVATO' : 'SHUTDOWN EMERGENZA HYPERLOOP',
       newState ? 'Info' : 'Alert',
       'Transport'
     );
@@ -203,13 +203,13 @@ export default function App() {
 
   const togglePowerNode = (nodeId: string) => {
     if (isPowerRerouted && !PRIMARY_NODE_IDS.includes(nodeId)) {
-      speak("Command denied. System in restricted load mode. Cannot power secondary structure.");
+      speak("Comando negato. Sistema in modalità carico ristretto. Impossibile alimentare strutture secondarie.");
       playSound('alert');
       return;
     }
 
     if (nodeId !== 'DAM' && !activePowerNodes.includes('DAM')) {
-      speak("Grid ignition failure. Main generator is offline. Restore dam connection first.");
+      speak("Fallimento accensione rete. Generatore principale scollegato. Ripristinare la connessione alla diga.");
       playSound('alert');
       return;
     }
@@ -219,8 +219,8 @@ export default function App() {
       
       // Special logic for DAM source
       if (nodeId === 'DAM' && active) {
-        speak("Blackout. Primary power source disconnected. Total containment failure imminent.");
-        addLog('TOTAL GRID COLLAPSE: PRIMARY GENERATOR OFFLINE', 'Critical', 'Source');
+        speak("Blackout. Sorgente energetica primaria scollegata. Fallimento totale del contenimento imminente.");
+        addLog('COLLASSO TOTALE RETE: GENERATORE PRIMARIO OFFLINE', 'Critical', 'Source');
         playSound('alert');
         setIsPowerLossVisible(true);
         return []; // Blackout: all nodes lose power
@@ -234,8 +234,8 @@ export default function App() {
 
       if (!active && totalLoad > MAX_POWER_CAPACITY) {
         // Power Loss Logic: Shed non-essential nodes
-        addLog('GRID OVERLOAD: AUTOMATIC LOAD SHEDDING INITIATED', 'Critical', 'Power');
-        speak("Warning. Power load exceeded. Initiating safety shed of non-primary structures.");
+        addLog('SOVRACCARICO RETE: INIZIATO DISTACCO AUTOMATICO CARICHI', 'Critical', 'Power');
+        speak("Attenzione. Carico energetico eccessivo. Inizio distacco di sicurezza delle strutture non primarie.");
         playSound('alert');
         setIsPowerLossVisible(true);
         
@@ -249,7 +249,7 @@ export default function App() {
       }
 
       addLog(
-        `${active ? 'DISCONNECTED' : 'CONNECTED'} Power to Node: ${nodeId}`,
+        `${active ? 'DISCONNESSO' : 'CONNESSO'} nodo energetico: ${nodeId}`,
         active ? 'Warning' : 'Info',
         'Power Grid'
       );
@@ -265,13 +265,13 @@ export default function App() {
     if (newState) {
       // Force disable all non-primary nodes
       setActivePowerNodes(prev => prev.filter(id => PRIMARY_NODE_IDS.includes(id)));
-      speak("Emergency power rerouted to primary sectors. Non-essential grids offline.");
+      speak("Energia di emergenza reindirizzata ai settori primari. Reti non essenziali disattivate.");
     } else {
-      speak("Power restoration complete. Grid returning to standard load.");
+      speak("Ripristino energetico completato. Rete in ritorno al carico standard.");
     }
 
     addLog(
-      newState ? 'POWER DIVERTED TO PRIMARY CONTAINMENT' : 'POWER SYSTEM RETURNED TO BALANCED GRID',
+      newState ? 'ENERGIA REINDIRIZZATA AL CONTENIMENTO PRIMARIO' : 'SISTEMA TORNATO A RETE BILANCIATA',
       'Warning',
       'Power'
     );
@@ -343,13 +343,22 @@ export default function App() {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       
-      // Select a more professional/authoritative voice if available
       const voices = window.speechSynthesis.getVoices();
-      const preferredVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Female') || v.lang.startsWith('en'));
-      if (preferredVoice) utterance.voice = preferredVoice;
+      // Try to find a "natural" sounding voice
+      // Prioritize Italian "Natural" or "Google" voices
+      const voice = voices.find(v => v.lang.startsWith('it') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Elsa'))) || 
+                    voices.find(v => v.lang.startsWith('it')) ||
+                    voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google'))) ||
+                    voices.find(v => v.lang.startsWith('en')) ||
+                    voices[0];
       
-      utterance.pitch = 0.85; // Slightly lower for authoritative male tone or rich female tone
-      utterance.rate = 0.95;  // Slightly slower for clarity
+      if (voice) {
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+      }
+      
+      utterance.pitch = 0.95;
+      utterance.rate = 1.0;
       utterance.volume = 1;
       window.speechSynthesis.speak(utterance);
     }
@@ -359,11 +368,18 @@ export default function App() {
     const newState = !isLockdown;
     setIsLockdown(newState);
     playSound('lockdown');
-    if (newState) speak("Lockdown protocol initiated. All security perimeters sealed.");
-    else speak("Lockdown terminated. System returning to standby.");
+    
+    if (newState) {
+      speak("Protocollo di isolamento avviato. Perimetri di sicurezza sigillati. Collegamenti ADS e Neurali disattivati per prevenire interferenze.");
+      setIsADSActive(false);
+      setIsNeuralActive(false);
+      addLog('SISTEMI ADS E NEURALI DISATTIVATI', 'Warning', 'Security');
+    } else {
+      speak("Isolamento terminato. Sistema in ritorno alla modalità standby.");
+    }
     
     addLog(
-      newState ? 'LOCKDOWN PROTOCOL INITIATED' : 'LOCKDOWN PROTOCOL TERMINATED',
+      newState ? 'PROTOCOLLO LOCKDOWN AVVIATO' : 'PROTOCOLLO LOCKDOWN TERMINATO',
       newState ? 'Alert' : 'Warning',
       'Global'
     );
@@ -378,7 +394,7 @@ export default function App() {
   useEffect(() => {
     const alertTimer = setTimeout(() => {
       setIsAlertActive(true);
-      speak("Warning. Containment breach detected in sector seven B.");
+      speak("Attenzione. Violazione del contenimento rilevata nel settore sette B.");
       playSound('alert');
     }, 5000);
     return () => clearTimeout(alertTimer);
@@ -399,7 +415,7 @@ export default function App() {
   const updateDinoStatus = (id: string, newStatus: string) => {
     playSound('tap');
     setDinos(prev => prev.map(d => d.id === id ? { ...d, status: newStatus as any } : d));
-    addLog(`Asset ${id} status update: ${newStatus}`, 'Info', 'Radar');
+    addLog(`Aggiornamento stato Asset ${id}: ${newStatus}`, 'Info', 'Radar');
   };
 
   const launchApp = (id: AppId) => {
@@ -408,28 +424,28 @@ export default function App() {
   };
 
   const toggleADS = () => {
-    if (isEmergencyProtocol) {
+    if (isEmergencyProtocol || isLockdown) {
       playSound('tap');
-      addLog('ADS OVERRIDE BLOCKED: Emergency Protocol Active', 'Alert', 'Security');
+      addLog(`OVERRIDE ADS BLOCCATO: Protocollo ${isLockdown ? 'Lockdown' : 'Emergenza'} Attivo`, 'Alert', 'Security');
       return;
     }
     const newState = !isADSActive;
     setIsADSActive(newState);
-    addLog(newState ? 'ADS SYSTEM RESTORED' : 'ADS SYSTEM DISK-FAILURE / OFFLINE', newState ? 'Info' : 'Alert', 'Security');
-    if (!newState) speak("Warning. Aerial Defense System deactivated. Pterosaur containment at risk.");
-    else speak("ADS online. Safe flight corridors established.");
+    addLog(newState ? 'SISTEMA ADS RIPRISTINATO' : 'GUASTO DISCO SISTEMA ADS / OFFLINE', newState ? 'Info' : 'Alert', 'Security');
+    if (!newState) speak("Attenzione. Sistema di Difesa Aerea disattivato. Contenimento Pterosauri a rischio.");
+    else speak("ADS online. Corridoi di volo sicuri stabiliti.");
   };
 
   const toggleNeural = () => {
-    if (isEmergencyProtocol) {
+    if (isEmergencyProtocol || isLockdown) {
       playSound('tap');
-      addLog('NEURAL OVERRIDE BLOCKED: Emergency Protocol Active', 'Alert', 'Research');
+      addLog(`OVERRIDE NEURALE BLOCCATO: Protocollo ${isLockdown ? 'Lockdown' : 'Emergenza'} Attivo`, 'Alert', 'Research');
       return;
     }
     const newState = !isNeuralActive;
     setIsNeuralActive(newState);
-    addLog(newState ? 'NEURAL UPLINK ESTABLISHED' : 'NEURAL UPLINK TERMINATED', 'Info', 'Research');
-    if (newState) speak("Neural sensor array active. Direct asset guidance enabled.");
+    addLog(newState ? 'UPLINK NEURALE STABILITO' : 'UPLINK NEURALE TERMINATO', 'Info', 'Research');
+    if (newState) speak("Array sensori neurali attivo. Guida diretta degli asset abilitata.");
   };
 
   const toggleEmergencyProtocol = () => {
@@ -437,11 +453,13 @@ export default function App() {
     setIsEmergencyProtocol(newState);
     if (newState) {
       setIsLockdown(true);
+      setIsADSActive(false);
+      setIsNeuralActive(false);
       setIsAlertActive(true);
-      speak("Emergency Red Alert. Protocol Code Amber. All assets recalling to containment center.");
-      addLog('EMERGENCY PROTOCOL AMBER: RECALL INITIATED', 'Critical', 'Global');
+      speak("Allerta Rossa di emergenza. Protocollo Codice Ambra. Richiamo di tutti gli asset al centro di contenimento.");
+      addLog('PROTOCOLLO EMERGENZA AMBRA: RICHIAMO AVVIATO', 'Critical', 'Global');
     } else {
-      speak("Emergency protocol terminated. Resuming standard monitoring.");
+      speak("Protocollo di emergenza terminato. Ripresa del monitoraggio standard.");
     }
   };
 
@@ -481,10 +499,10 @@ export default function App() {
               <div className="absolute top-12 left-2 right-2 p-4 bg-biosyn-alert/90 backdrop-blur-md border border-biosyn-alert text-white flex items-center gap-3 shadow-2xl rounded-xl active:scale-95 transition-transform">
                 <AlertTriangle className="text-white animate-pulse" />
                 <div className="flex-1">
-                  <div className="font-bold uppercase tracking-widest text-[10px]">Containment Breach</div>
-                  <div className="text-[9px] opacity-90 leading-tight">Sector 7B: Giganotosaurus specimen moving toward maintenance tunnels.</div>
+                  <div className="font-bold uppercase tracking-widest text-[10px]">Violazione Contenimento</div>
+                  <div className="text-[9px] opacity-90 leading-tight">Settore 7B: Esemplare di Giganotosaurus in movimento verso i tunnel di manutenzione.</div>
                 </div>
-                <div className="text-[8px] font-bold bg-white/20 px-2 py-1 rounded">INTERVENE</div>
+                <div className="text-[8px] font-bold bg-white/20 px-2 py-1 rounded">INTERVIENI</div>
               </div>
             </motion.div>
           )}
@@ -508,16 +526,16 @@ export default function App() {
                   <ZapOff size={32} className="text-biosyn-alert animate-bounce" />
                 </div>
                 <div className="space-y-1">
-                  <h2 className="text-sm font-black uppercase tracking-widest text-biosyn-alert italic">Critical Power Event</h2>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-biosyn-alert italic">Evento Energetico Critico</h2>
                   <p className="text-[8px] text-white/50 font-mono uppercase tracking-widest leading-relaxed">
-                    Grid overload or feeder damage detected. Non-primary subsystems shed.
+                    Sovraccarico rete o danni ai feeder rilevati. Sottosistemi non primari distaccati.
                   </p>
                 </div>
                 <button 
                   onClick={() => { setIsPowerLossVisible(false); playSound('success'); }}
                   className="w-full py-2 bg-biosyn-alert text-black font-bold uppercase tracking-widest text-[8px] hover:bg-red-500 transition-colors"
                 >
-                  Confirm Awareness
+                  Conferma Ricezione
                 </button>
               </motion.div>
             </motion.div>
@@ -618,8 +636,8 @@ function HomeScreen({ onLaunch, isDamPowered }: { onLaunch: (id: AppId) => void,
           className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm pointer-events-none flex flex-col items-center justify-center gap-2 border border-biosyn-alert/20 m-4 rounded-3xl"
         >
           <ZapOff size={32} className="text-biosyn-alert animate-bounce" />
-          <span className="text-[10px] font-black text-biosyn-alert uppercase tracking-widest">Grid Collapse</span>
-          <span className="text-[6px] text-white/40 uppercase font-bold">Manual override required</span>
+          <span className="text-[10px] font-black text-biosyn-alert uppercase tracking-widest">Collasso Rete</span>
+          <span className="text-[6px] text-white/40 uppercase font-bold">Richiesto override manuale</span>
         </motion.div>
       )}
 
@@ -718,9 +736,9 @@ function AppWindow({ appId, onClose, dinos, logs, staff, focusedId, isLockdown, 
             />
           </div>
           <div className="space-y-1">
-            <h2 className="text-xl font-black uppercase tracking-[0.3em] text-biosyn-alert">System Offline</h2>
+            <h2 className="text-xl font-black uppercase tracking-[0.3em] text-biosyn-alert">Sistema Offline</h2>
             <p className="text-[9px] text-white/30 font-mono uppercase tracking-widest leading-relaxed max-w-[200px]">
-              Critical Power Failure: Main Generator (DAM) Disconnected. Application resources suspended.
+              Guasto Energetico Critico: Generatore Principale (DAM) Scollegato. Risorse applicative sospese.
             </p>
           </div>
           <div className="w-full max-w-[150px] space-y-2 mt-4">
@@ -731,14 +749,14 @@ function AppWindow({ appId, onClose, dinos, logs, staff, focusedId, isLockdown, 
                    className="absolute inset-y-0 w-20 bg-biosyn-alert"
                 />
              </div>
-             <div className="text-[7px] text-biosyn-alert font-bold uppercase tracking-tighter animate-pulse">Attempting Re-Ignition...</div>
+             <div className="text-[7px] text-biosyn-alert font-bold uppercase tracking-tighter animate-pulse">Tentativo di riaccensione...</div>
           </div>
 
           <button 
             onClick={onClose}
             className="mt-6 px-4 py-2 border border-biosyn-alert/40 text-biosyn-alert text-[8px] font-black uppercase tracking-widest hover:bg-biosyn-alert hover:text-black transition-all"
           >
-            Terminal Return: Dashboard
+            Ritorno Terminale: Dashboard
           </button>
         </motion.div>
       )}
@@ -1184,22 +1202,22 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
             </div>
 
             {/* Info Panel with Hyperloop Emergency Controls */}
-            <div className="flex-1 md:flex-[1] bg-biosyn-surface p-5 flex flex-col overflow-hidden relative border-t md:border-t-0 md:border-l md:border-biosyn-border md:bg-black/20 pt-14 md:pt-16">
-              {/* Quick Config Panel (Top center/left in info area) */}
-              <div className="absolute top-4 left-4 right-4 z-40">
-                 <div className="bg-black/80 backdrop-blur-md border border-biosyn-border p-1.5 rounded flex gap-2">
+            <div className="flex-1 md:flex-[1] bg-biosyn-surface p-5 flex flex-col overflow-hidden relative border-t md:border-t-0 md:border-l md:border-biosyn-border md:bg-black/20 pt-6 md:pt-8">
+              {/* Quick Config Panel (Moved to Bottom to avoid overlap) */}
+              <div className="absolute bottom-4 left-4 right-4 z-40">
+                 <div className="bg-black/90 backdrop-blur-md border border-biosyn-border p-1.5 rounded-lg flex gap-2 shadow-2xl">
                     <button 
                       onClick={onToggleADS}
-                      disabled={isEmergencyProtocol}
-                      className={`flex items-center gap-1.5 px-2 py-1 text-[6px] font-bold uppercase tracking-widest rounded transition-all ${isADSActive ? 'bg-biosyn-green/20 text-biosyn-green border border-biosyn-green/40' : 'bg-red-500/20 text-red-500 border border-red-500/40'} ${isEmergencyProtocol ? 'opacity-30 cursor-not-allowed saturate-0' : ''}`}
+                      disabled={isEmergencyProtocol || isLockdown}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[7px] font-bold uppercase tracking-widest rounded transition-all ${isADSActive ? 'bg-biosyn-green/20 text-biosyn-green border border-biosyn-green/40' : 'bg-red-500/20 text-red-500 border border-red-500/40'} ${(isEmergencyProtocol || isLockdown) ? 'opacity-30 cursor-not-allowed saturate-0' : ''}`}
                     >
                       {isADSActive ? <Shield size={8} /> : <ShieldAlert size={8} />}
                       ADS
                     </button>
                     <button 
                       onClick={onToggleNeural}
-                      disabled={isEmergencyProtocol}
-                      className={`flex items-center gap-1.5 px-2 py-1 text-[6px] font-bold uppercase tracking-widest rounded transition-all ${isNeuralActive ? 'bg-biosyn-amber/20 text-biosyn-amber border border-biosyn-amber/40' : 'bg-white/5 text-white/40 border border-white/10'} ${isEmergencyProtocol ? 'opacity-30 cursor-not-allowed saturate-0' : ''}`}
+                      disabled={isEmergencyProtocol || isLockdown}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[7px] font-bold uppercase tracking-widest rounded transition-all ${isNeuralActive ? 'bg-biosyn-amber/20 text-biosyn-amber border border-biosyn-amber/40' : 'bg-white/5 text-white/40 border border-white/10'} ${(isEmergencyProtocol || isLockdown) ? 'opacity-30 cursor-not-allowed saturate-0' : ''}`}
                     >
                       <Radio size={8} />
                       NEURAL
@@ -1207,6 +1225,8 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
                  </div>
               </div>
 
+              <div className="flex-1 overflow-hidden">
+                <div className="h-full pb-16 overflow-y-auto scrollbar-hide">
               {selectedDino ? (
                 <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                   <div className={`bg-black/40 border p-4 rounded-lg ${isLockdown ? 'border-biosyn-alert/30' : 'border-biosyn-border'}`}>
@@ -1283,6 +1303,8 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
                   </div>
                 </div>
               )}
+                </div>
+              </div>
             </div>
           </div>
         ) : (
