@@ -1,0 +1,6 @@
+{
+  "name": "Biosyn OS Emulator",
+  "description": "A high-fidelity mobile emulator of the Biosyn corporate-biotech operating system from Jurassic World, featuring real-time dinosaur tracking and security alerts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
