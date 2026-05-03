@@ -408,6 +408,11 @@ export default function App() {
   };
 
   const toggleADS = () => {
+    if (isEmergencyProtocol) {
+      playSound('tap');
+      addLog('ADS OVERRIDE BLOCKED: Emergency Protocol Active', 'Alert', 'Security');
+      return;
+    }
     const newState = !isADSActive;
     setIsADSActive(newState);
     addLog(newState ? 'ADS SYSTEM RESTORED' : 'ADS SYSTEM DISK-FAILURE / OFFLINE', newState ? 'Info' : 'Alert', 'Security');
@@ -416,6 +421,11 @@ export default function App() {
   };
 
   const toggleNeural = () => {
+    if (isEmergencyProtocol) {
+      playSound('tap');
+      addLog('NEURAL OVERRIDE BLOCKED: Emergency Protocol Active', 'Alert', 'Research');
+      return;
+    }
     const newState = !isNeuralActive;
     setIsNeuralActive(newState);
     addLog(newState ? 'NEURAL UPLINK ESTABLISHED' : 'NEURAL UPLINK TERMINATED', 'Info', 'Research');
@@ -931,18 +941,31 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
           <button onClick={() => handleZoom(-0.4)} className="px-2 py-1 text-white hover:text-biosyn-amber uppercase text-[8px] font-bold">Zoom-</button>
         </div>
 
-        <div className="flex bg-black/60 backdrop-blur-md rounded-md p-1 border border-biosyn-border pointer-events-auto shadow-2xl">
+        <div className="flex bg-black/60 backdrop-blur-md rounded-md p-1 border border-biosyn-border pointer-events-auto shadow-2xl gap-2">
+          <button 
+            onClick={onToggleLockdown}
+            className={`px-3 py-1 text-[8px] font-bold uppercase tracking-widest border border-biosyn-alert/30 rounded transition-colors ${isLockdown ? 'bg-biosyn-alert text-white animate-pulse' : 'text-biosyn-alert/60'}`}
+          >
+            {isLockdown ? 'Lockdown Active' : 'Lockdown Mode'}
+          </button>
           <button 
             onClick={onToggleEmergencyProtocol}
-            className={`mr-2 px-3 py-1 text-[8px] font-bold uppercase tracking-widest border border-biosyn-alert/30 rounded transition-colors ${isEmergencyProtocol ? 'bg-biosyn-alert text-white animate-pulse' : 'text-biosyn-alert/60'}`}
+            className={`px-3 py-1 text-[8px] font-bold uppercase tracking-widest border border-biosyn-alert/30 rounded transition-colors ${isEmergencyProtocol ? 'bg-biosyn-alert text-white animate-pulse' : 'text-biosyn-alert/60'}`}
           >
             {isEmergencyProtocol ? 'Cancel Red Alert' : 'Red Alert'}
           </button>
+          <div className="w-px h-4 bg-white/10 self-center" />
           <button 
             onClick={() => { onPlaySound('tap'); setViewMode('MAP'); }}
             className={`px-3 py-1 text-[8px] font-bold uppercase tracking-widest transition-colors ${viewMode === 'MAP' ? 'bg-biosyn-amber text-black' : 'text-white/40'}`}
           >
-            Radar
+            Map
+          </button>
+          <button 
+            onClick={() => { onPlaySound('tap'); setViewMode('DATABASE'); }}
+            className={`px-3 py-1 text-[8px] font-bold uppercase tracking-widest transition-colors ${viewMode === 'DATABASE' ? 'bg-biosyn-amber text-black' : 'text-white/40'}`}
+          >
+            Asset Info
           </button>
         </div>
       </div>
@@ -1167,14 +1190,16 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
                  <div className="bg-black/80 backdrop-blur-md border border-biosyn-border p-1.5 rounded flex gap-2">
                     <button 
                       onClick={onToggleADS}
-                      className={`flex items-center gap-1.5 px-2 py-1 text-[6px] font-bold uppercase tracking-widest rounded transition-all ${isADSActive ? 'bg-biosyn-green/20 text-biosyn-green border border-biosyn-green/40' : 'bg-red-500/20 text-red-500 border border-red-500/40'}`}
+                      disabled={isEmergencyProtocol}
+                      className={`flex items-center gap-1.5 px-2 py-1 text-[6px] font-bold uppercase tracking-widest rounded transition-all ${isADSActive ? 'bg-biosyn-green/20 text-biosyn-green border border-biosyn-green/40' : 'bg-red-500/20 text-red-500 border border-red-500/40'} ${isEmergencyProtocol ? 'opacity-30 cursor-not-allowed saturate-0' : ''}`}
                     >
                       {isADSActive ? <Shield size={8} /> : <ShieldAlert size={8} />}
                       ADS
                     </button>
                     <button 
                       onClick={onToggleNeural}
-                      className={`flex items-center gap-1.5 px-2 py-1 text-[6px] font-bold uppercase tracking-widest rounded transition-all ${isNeuralActive ? 'bg-biosyn-amber/20 text-biosyn-amber border border-biosyn-amber/40' : 'bg-white/5 text-white/40 border border-white/10'}`}
+                      disabled={isEmergencyProtocol}
+                      className={`flex items-center gap-1.5 px-2 py-1 text-[6px] font-bold uppercase tracking-widest rounded transition-all ${isNeuralActive ? 'bg-biosyn-amber/20 text-biosyn-amber border border-biosyn-amber/40' : 'bg-white/5 text-white/40 border border-white/10'} ${isEmergencyProtocol ? 'opacity-30 cursor-not-allowed saturate-0' : ''}`}
                     >
                       <Radio size={8} />
                       NEURAL
