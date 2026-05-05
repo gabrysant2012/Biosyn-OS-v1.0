@@ -27,11 +27,22 @@ import {
   Menu,
   ChevronLeft,
   AlertTriangle,
-  ShieldOff
+  ShieldOff,
+  Video,
+  VideoOff,
+  Camera as CameraIcon
 } from 'lucide-react';
-import { AppId, Dinosaur, SecurityEvent, Personnel } from './types';
+import { AppId, Dinosaur, SecurityEvent, Personnel, Camera } from './types';
 
 // Mock Data
+const INITIAL_CAMERAS: Camera[] = [
+  { id: 'CAM-01', name: 'SERVER-ROOM-01', location: 'Sala Server Centrale', position: { x: 50, y: 55 }, isOnline: false, status: 'offline', imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc51?auto=format&fit=crop&q=80&w=800' },
+  { id: 'CAM-02', name: 'PADDOCK-T4', location: 'Recinto T-Rex', position: { x: 65, y: 30 }, isOnline: true, status: 'active', imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800' },
+  { id: 'CAM-03', name: 'FIELD-ALPHA', location: 'Paddock Raptor', position: { x: 42, y: 58 }, isOnline: true, status: 'active', imageUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=800' },
+  { id: 'CAM-04', name: 'GATE-07', location: 'Gate Settore 7', position: { x: 55, y: 15 }, isOnline: true, status: 'active', imageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800' },
+  { id: 'CAM-05', name: 'NORTH-VALLEY', location: 'Valle Nord-Ovest', position: { x: 80, y: 75 }, isOnline: true, status: 'active', imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800' },
+  { id: 'CAM-06', name: 'BIOSYN-SANCTUARY', location: 'Santuario BioSyn (Dall\'alto)', position: { x: 30, y: 85 }, isOnline: false, status: 'offline', imageUrl: 'https://images.unsplash.com/photo-1503387762-592dea58ef01?auto=format&fit=crop&q=80&w=800' },
+];
 const INITIAL_DINOS: Dinosaur[] = [
   { id: 'TREX-01', species: 'Tyrannosaurus Rex', threatLevel: 'Extreme', diet: 'Carnivore', status: 'Stable', enclosure: 'Sector 4', position: { x: 65, y: 30 } },
   { id: 'VEL-04', species: 'Velociraptor', threatLevel: 'High', diet: 'Carnivore', status: 'Breached', enclosure: 'S-Field Alpha', position: { x: 42, y: 58 } },
@@ -104,6 +115,12 @@ export default function App() {
   const [isEmergencyProtocol, setIsEmergencyProtocol] = useState(false);
   const [isPowerLossVisible, setIsPowerLossVisible] = useState(false);
   const [isSafetyProtocolActive, setIsSafetyProtocolActive] = useState(true);
+  const [cameras, setCameras] = useState<Camera[]>(INITIAL_CAMERAS);
+
+  const onRepairCamera = (id: string) => {
+    if (id === 'CAM-01' || id === 'CAM-06') return;
+    setCameras(prev => prev.map(c => c.id === id ? { ...c, isOnline: true, status: 'active' } : c));
+  };
 
   const isDamPowered = activePowerNodes.includes('DAM');
 
@@ -182,6 +199,20 @@ export default function App() {
               });
             }
           });
+        }
+        
+        // Camera Damage Logic
+        if (dino.status === 'Breached' && Math.random() < 0.08) {
+          setCameras(prev => prev.map(cam => {
+            const dist = Math.sqrt(Math.pow(newX - cam.position.x, 2) + Math.pow(newY - cam.position.y, 2));
+            if (dist < 4 && cam.isOnline) {
+              addLog(`CCTV OFFLINE: POSSIBILE DANNO ASSET A ${cam.id}`, 'Warning', cam.location);
+              speak(`Attenzione. Perdita segnale video alla telecamera ${cam.id}. Possibile interferenza animale.`);
+              playSound('alert');
+              return { ...cam, isOnline: false, status: 'offline' };
+            }
+            return cam;
+          }));
         }
         
         return { ...dino, position: { x: newX, y: newY } };
@@ -595,6 +626,8 @@ export default function App() {
                   isSafetyActive={isSafetyProtocolActive}
                   onToggleSafety={() => setIsSafetyProtocolActive(!isSafetyProtocolActive)}
                   isDamPowered={activePowerNodes.includes('DAM')}
+                  cameras={cameras}
+                  onRepairCamera={onRepairCamera}
                 />
             )}
           </AnimatePresence>
@@ -619,6 +652,7 @@ function HomeScreen({ onLaunch, isDamPowered }: { onLaunch: (id: AppId) => void,
     { id: AppId.RADAR, name: 'Radar', icon: RadarIcon, active: true },
     { id: AppId.PERSONNEL, name: 'Personnel', icon: Users, active: false },
     { id: AppId.ENVIRONMENT, name: 'Files', icon: ClipboardList, active: false },
+    { id: AppId.SURVEILLANCE, name: 'CCTV', icon: Video, active: true },
     { id: AppId.POWER, name: 'Power', icon: Zap, active: true },
   ];
 
@@ -682,7 +716,7 @@ function HomeScreen({ onLaunch, isDamPowered }: { onLaunch: (id: AppId) => void,
   );
 }
 
-function AppWindow({ appId, onClose, dinos, logs, staff, focusedId, isLockdown, isPowerRerouted, activePowerNodes, isHyperloopActive, isADSActive, isNeuralActive, isEmergencyProtocol, onToggleLockdown, onTogglePower, onTogglePowerNode, onToggleHyperloop, onToggleADS, onToggleNeural, onToggleEmergencyProtocol, onSwitchApp, onUpdateDino, onAddLog, onPlaySound, onLocate, isSafetyActive, onToggleSafety, isDamPowered }: { 
+function AppWindow({ appId, onClose, dinos, logs, staff, focusedId, isLockdown, isPowerRerouted, activePowerNodes, isHyperloopActive, isADSActive, isNeuralActive, isEmergencyProtocol, onToggleLockdown, onTogglePower, onTogglePowerNode, onToggleHyperloop, onToggleADS, onToggleNeural, onToggleEmergencyProtocol, onSwitchApp, onUpdateDino, onAddLog, onPlaySound, onLocate, isSafetyActive, onToggleSafety, isDamPowered, cameras, onRepairCamera }: { 
   appId: AppId, 
   onClose: () => void, 
   dinos: Dinosaur[],
@@ -710,7 +744,9 @@ function AppWindow({ appId, onClose, dinos, logs, staff, focusedId, isLockdown, 
   onLocate: (id: string) => void,
   isSafetyActive: boolean,
   onToggleSafety: () => void,
-  isDamPowered: boolean
+  isDamPowered: boolean,
+  cameras: Camera[],
+  onRepairCamera: (id: string) => void
 }) {
   return (
     <motion.div 
@@ -795,6 +831,14 @@ function AppWindow({ appId, onClose, dinos, logs, staff, focusedId, isLockdown, 
             onToggleNeural={onToggleNeural}
             isEmergencyProtocol={isEmergencyProtocol}
             onToggleEmergencyProtocol={onToggleEmergencyProtocol}
+          />
+        )}
+        {appId === AppId.SURVEILLANCE && (
+          <SurveillanceApp 
+            cameras={cameras}
+            isDamPowered={isDamPowered}
+            onRepair={onRepairCamera}
+            onPlaySound={onPlaySound}
           />
         )}
         {appId === AppId.POWER && (
@@ -1320,6 +1364,247 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function SurveillanceApp({ cameras, isDamPowered, onRepair, onPlaySound }: { 
+  cameras: Camera[], 
+  isDamPowered: boolean,
+  onRepair: (id: string) => void,
+  onPlaySound: (type: 'tap' | 'alert' | 'success' | 'lockdown') => void
+}) {
+  const [selectedCam, setSelectedCam] = useState<Camera | null>(null);
+
+  return (
+    <div className="h-full flex flex-col p-4 md:p-6 bg-biosyn-surface overflow-hidden">
+      <div className="flex justify-between items-center mb-4 md:mb-6">
+        <div>
+          <h2 className="text-xl font-black uppercase tracking-widest flex items-center gap-2">
+            <Video className="text-biosyn-amber" />
+            Videosorveglianza BioSyn
+          </h2>
+          <p className="text-[8px] text-white/40 uppercase tracking-tight font-mono">Feed Multicast // Criptazione 256-bit</p>
+        </div>
+        <div className="px-3 py-1 bg-black/40 border border-white/10 rounded flex items-center gap-2">
+          <div className={`w-1.5 h-1.5 rounded-full ${isDamPowered ? 'bg-biosyn-green animate-pulse' : 'bg-biosyn-alert'}`} />
+          <span className="text-[7px] font-bold uppercase tracking-widest">{isDamPowered ? 'Sistema Pronto' : 'Guasto Energetico'}</span>
+        </div>
+      </div>
+
+      {!isDamPowered ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 border border-white/5 bg-black/20 rounded-2xl relative overflow-hidden">
+           <div className="biosyn-static absolute inset-0 opacity-20" />
+           <VideoOff size={48} className="text-white/20 relative z-10" />
+           <p className="text-[10px] font-black tracking-widest uppercase text-white/40 relative z-10 italic">Segnale Perso: Rete Primaria Offline</p>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+          {/* Main Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto pr-1">
+            {cameras.map((camera) => (
+              <motion.div
+                key={camera.id}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => { setSelectedCam(camera); onPlaySound('tap'); }}
+                className={`aspect-video bg-black rounded-lg border relative group cursor-pointer overflow-hidden ${
+                  camera.isOnline ? 'border-white/10' : 'border-biosyn-alert/40'
+                }`}
+              >
+                {!camera.isOnline && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <motion.span 
+                      animate={{ opacity: [1, 0, 1] }} 
+                      transition={{ duration: 0.8, repeat: Infinity }}
+                      className="text-[10px] font-black text-biosyn-alert uppercase tracking-widest italic"
+                    >
+                      {['CAM-01', 'CAM-06'].includes(camera.id) ? 'DISMESSO' : 'OFFLINE'}
+                    </motion.span>
+                    {!['CAM-01', 'CAM-06'].includes(camera.id) && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onRepair(camera.id); onPlaySound('success'); }}
+                        className="mt-2 px-2 py-0.5 bg-biosyn-alert/20 text-biosyn-alert text-[6px] font-bold uppercase rounded border border-biosyn-alert/40 hover:bg-biosyn-alert hover:text-black transition-colors"
+                      >
+                        Ripristina Feed
+                      </button>
+                    )}
+                    {['CAM-01', 'CAM-06'].includes(camera.id) && (
+                      <span className="mt-1 text-[5px] text-white/30 uppercase tracking-widest font-mono">Hardware Compromesso</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Camera Overlay */}
+                <div className="absolute inset-0 biosyn-static opacity-[0.03] pointer-events-none" />
+                <div className="absolute inset-0 biosyn-scanline opacity-[0.05] pointer-events-none" />
+                
+                <div className="absolute top-2 left-2 flex flex-col gap-0.5 z-10">
+                   <div className="flex items-center gap-1.5 p-1 bg-black/40 backdrop-blur-sm rounded">
+                      <div className={`w-1.5 h-1.5 rounded-full shadow-[0_0_5px_rgba(255,255,255,0.5)] ${camera.isOnline ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
+                      <span className="text-[6px] font-bold text-white/80 tracking-widest uppercase">{camera.name}</span>
+                   </div>
+                   <span className="text-[5px] font-mono text-white/30 uppercase pl-1">{camera.location}</span>
+                </div>
+
+                <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+                   <div className="flex items-center gap-1">
+                      <div className={`w-1 h-1 rounded-full ${camera.isOnline ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
+                      <span className="text-[5px] font-black text-white/40 tracking-tighter uppercase">REC</span>
+                   </div>
+                   <div className="text-[4px] font-mono text-white/20 uppercase tracking-tighter">
+                      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                   </div>
+                </div>
+
+                {/* Corner Accents */}
+                <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-white/20 rounded-tr-sm" />
+                <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-white/20 rounded-tl-sm pointer-events-none" />
+                <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-white/20 rounded-br-sm pointer-events-none" />
+                <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-white/20 rounded-bl-sm pointer-events-none" />
+
+                {/* Viewport for generic "video" look */}
+                <div className={`w-full h-full ${camera.isOnline ? 'bg-emerald-950/20' : 'bg-red-950/10'} flex items-center justify-center relative overflow-hidden`}>
+                   {camera.isOnline ? (
+                      <>
+                         {camera.imageUrl && (
+                            <img 
+                               src={`${camera.imageUrl}&timestamp=${Date.now()}`} 
+                               alt="Feed" 
+                               className="absolute inset-0 w-full h-full object-cover animate-slow-pan opacity-60 grayscale-[0.4] contrast-[1.3] brightness-[0.9] sepia-[0.1]"
+                               referrerPolicy="no-referrer"
+                            />
+                         )}
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                         <div className="absolute inset-4 border-[0.5px] border-white/10 opacity-30 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" />
+                         <div className="absolute bottom-2 right-2 text-[5px] font-mono text-white/20 tracking-tighter">
+                            ISO 800 // F1.8 // 1/60s
+                         </div>
+                      </>
+                   ) : (
+                      <VideoOff size={16} className="text-white/5" />
+                   )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="p-3 bg-black/40 border border-white/5 rounded-xl flex items-center gap-4">
+             <div className="flex-1">
+                <div className="text-[8px] font-black uppercase text-biosyn-amber tracking-widest">Monitor Protocollo</div>
+                <div className="text-[6px] text-white/40 uppercase font-mono mt-0.5">Rilevamento asset automatizzato: {cameras.filter(c => c.isOnline).length}/{cameras.length} Feed attivi</div>
+             </div>
+             <button 
+                onClick={() => { cameras.forEach(c => !c.isOnline && !['CAM-01', 'CAM-06'].includes(c.id) && onRepair(c.id)); onPlaySound('success'); }}
+                className="px-4 py-2 bg-biosyn-amber text-black text-[8px] font-black uppercase tracking-widest rounded-md hover:scale-105 transition-transform"
+             >
+                Ristabilisci Uplink Globale
+             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Expanded Feed Modal */}
+      <AnimatePresence>
+        {selectedCam && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setSelectedCam(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-4xl aspect-video bg-[#050505] rounded-3xl border border-white/10 relative overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+               {/* Video Feed Styling */}
+               <div className="absolute inset-0 biosyn-static opacity-[0.05] pointer-events-none" />
+               <div className="absolute inset-0 biosyn-scanline opacity-[0.08] pointer-events-none" />
+               <div className="absolute inset-0 bg-emerald-950/10 pointer-events-none" />
+               
+               {/* UI Overlays */}
+               <div className="relative z-10 p-6 flex-1 flex flex-col">
+                  <div className="flex justify-between">
+                     <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                           <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+                           <span className="text-xs font-black uppercase tracking-[0.2em]">{selectedCam.name}</span>
+                        </div>
+                        <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">{selectedCam.location} // SECTOR_BI-OSYN</span>
+                     </div>
+                     <div className="text-right flex flex-col gap-1">
+                        <div className="text-[9px] font-bold text-biosyn-amber uppercase">REC [●] // LIVE FEED</div>
+                        <div className="text-[7px] font-mono text-white/30 uppercase">05 MAY 2026 // {new Date().toLocaleTimeString()}</div>
+                     </div>
+                  </div>
+
+                  <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+                     {!selectedCam.isOnline ? (
+                        <div className="flex flex-col items-center gap-2 z-20">
+                           <VideoOff size={48} className="text-biosyn-alert animate-bounce" />
+                           <span className="text-lg font-black text-biosyn-alert uppercase tracking-[0.5em] italic">SEGNALE INTERROTTO</span>
+                        </div>
+                     ) : (
+                        <>
+                           {selectedCam.imageUrl && (
+                              <img 
+                                 src={`${selectedCam.imageUrl}&timestamp=${Date.now()}`} 
+                                 alt="Live Feed" 
+                                 className="absolute inset-0 w-full h-full object-cover animate-slow-pan opacity-40 grayscale-[0.2] contrast-[1.2] brightness-[0.8]"
+                                 referrerPolicy="no-referrer"
+                              />
+                           )}
+                           <div className="absolute inset-0 bg-radial-[at_50%_50%] from-transparent to-black/60 pointer-events-none" />
+                           <div className="w-full max-w-sm h-px bg-white/10 shadow-[0_0_10px_rgba(255,255,255,0.2)] relative overflow-hidden z-20">
+                              <motion.div 
+                                 animate={{ x: [-400, 400] }}
+                                 transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                                 className="absolute inset-y-0 w-24 bg-white/20"
+                              />
+                           </div>
+                        </>
+                     )}
+                  </div>
+
+                  <div className="flex justify-between items-end">
+                     <div className="flex gap-4">
+                        <div className="flex flex-col gap-1">
+                           <span className="text-[6px] font-bold text-white/30 uppercase">Azimut</span>
+                           <span className="text-[8px] font-mono">14.22.09</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                           <span className="text-[6px] font-bold text-white/30 uppercase">Elevazione</span>
+                           <span className="text-[8px] font-mono">+05.21</span>
+                        </div>
+                     </div>
+                     <div className="flex gap-2">
+                        <button 
+                          onClick={() => setSelectedCam(null)}
+                          className="px-4 py-2 border border-white/20 text-white/60 text-[8px] font-black uppercase tracking-widest hover:bg-white/10 rounded-lg transition-all"
+                        >
+                          Chiudi Feed
+                        </button>
+                        {!selectedCam.isOnline && (
+                           <button 
+                             onClick={() => onRepair(selectedCam.id)}
+                             disabled={['CAM-01', 'CAM-06'].includes(selectedCam.id)}
+                             className={`px-4 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${['CAM-01', 'CAM-06'].includes(selectedCam.id) ? 'bg-white/5 text-white/20 border border-white/10 cursor-not-allowed opacity-50' : 'bg-biosyn-alert text-black hover:scale-105'}`}
+                           >
+                             {['CAM-01', 'CAM-06'].includes(selectedCam.id) ? 'Hardware Error' : 'Ri-Sincronizza'}
+                           </button>
+                        )}
+                     </div>
+                  </div>
+               </div>
+
+               {/* Vignette */}
+               <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

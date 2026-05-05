@@ -4,7 +4,18 @@ export enum AppId {
   PERSONNEL = 'personnel',
   ENVIRONMENT = 'environment',
   RADAR = 'radar',
-  POWER = 'power'
+  POWER = 'power',
+  SURVEILLANCE = 'surveillance'
+}
+
+export interface Camera {
+  id: string;
+  name: string;
+  location: string;
+  position: { x: number; y: number };
+  isOnline: boolean;
+  status: 'active' | 'noise' | 'offline';
+  imageUrl?: string;
 }
 
 export interface Dinosaur {
