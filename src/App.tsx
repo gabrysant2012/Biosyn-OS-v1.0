@@ -49,6 +49,7 @@ const INITIAL_DINOS: Dinosaur[] = [
   { id: 'TRI-02', species: 'Triceratops', threatLevel: 'Low', diet: 'Herbivore', status: 'Stable', enclosure: 'Plains 1', position: { x: 20, y: 25 } },
   { id: 'BRA-01', species: 'Brachiosaurus', threatLevel: 'Low', diet: 'Herbivore', status: 'Stable', enclosure: 'Valley West', position: { x: 80, y: 75 } },
   { id: 'GIG-01', species: 'Giganotosaurus', threatLevel: 'Extreme', diet: 'Carnivore', status: 'Tracking', enclosure: 'Sector 7', position: { x: 55, y: 15 } },
+  { id: 'STE-01', species: 'Stegosaurus', threatLevel: 'Medium', diet: 'Herbivore', status: 'Stable', enclosure: 'Plains 2', position: { x: 35, y: 35 } },
   { id: 'PAR-03', species: 'Parasaurolophus', threatLevel: 'Low', diet: 'Herbivore', status: 'Stable', enclosure: 'Lagoon Edge', position: { x: 30, y: 85 } },
 ];
 
@@ -1234,7 +1235,12 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
                     style={{ left: `${dino.position.x}%`, top: `${dino.position.y}%` }}
                   >
                     <div className="relative flex flex-col items-center">
-                      <div className={`w-3 h-3 rounded-full border border-white/20 flex items-center justify-center p-0.5 ${dino.status === 'Breached' ? 'bg-[#FF5555] animate-pulse shadow-[0_0_15px_rgba(255,85,85,0.6)]' : 'bg-biosyn-amber shadow-[0_0_10px_rgba(247,192,86,0.3)]'}`}>
+                      <div className={`w-3 h-3 rounded-full border border-white/20 flex items-center justify-center p-0.5 shadow-lg ${
+                        dino.threatLevel === 'Extreme' ? 'bg-[#FF5555] animate-pulse shadow-[0_0_15px_rgba(255,85,85,0.6)]' :
+                        dino.threatLevel === 'High' ? 'bg-biosyn-alert shadow-[0_0_10px_rgba(197,48,48,0.4)]' :
+                        dino.threatLevel === 'Medium' ? 'bg-biosyn-amber shadow-[0_0_10px_rgba(247,192,86,0.3)]' :
+                        'bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.3)]'
+                      }`}>
                       </div>
                       <div className="absolute top-full mt-1 px-1 py-0.5 bg-black/80 backdrop-blur-sm border border-white/10 rounded text-[4px] font-black tracking-widest text-white whitespace-nowrap">
                         {dino.id}
@@ -1280,7 +1286,12 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-[10px] uppercase font-bold text-white/70">
                       <div><span className="text-[7px] block opacity-40">Species</span>{selectedDino.species}</div>
-                      <div><span className="text-[7px] block opacity-40">Risk</span>{selectedDino.threatLevel}</div>
+                      <div><span className="text-[7px] block opacity-40">Risk</span><span className={
+                        selectedDino.threatLevel === 'Extreme' ? 'text-biosyn-alert animate-pulse' :
+                        selectedDino.threatLevel === 'High' ? 'text-biosyn-alert' :
+                        selectedDino.threatLevel === 'Medium' ? 'text-biosyn-amber' :
+                        'text-green-400'
+                      }>{selectedDino.threatLevel}</span></div>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -1355,9 +1366,20 @@ function RadarApp({ dinos, staff, focusedId, isLockdown, isPowerRerouted, active
           <div className="flex-1 overflow-y-auto p-6 space-y-2 bg-[#080a08]">
              {dinos.map(dino => (
               <div key={dino.id} onClick={() => { onPlaySound('tap'); setSelectedDino(dino); setViewMode('MAP'); }} className="bg-biosyn-surface border border-biosyn-border p-4 rounded flex items-center gap-4 cursor-pointer hover:bg-biosyn-border/20 transition-colors">
+                <div className={`w-1 h-8 rounded-full ${
+                  dino.threatLevel === 'Extreme' ? 'bg-[#FF5555] animate-pulse' :
+                  dino.threatLevel === 'High' ? 'bg-biosyn-alert' :
+                  dino.threatLevel === 'Medium' ? 'bg-biosyn-amber' :
+                  'bg-green-400'
+                }`} />
                 <div className="flex-1 min-w-0">
                   <h3 className="text-[11px] font-bold uppercase">{dino.species}</h3>
-                  <div className="flex gap-3 text-[7px] uppercase tracking-tighter opacity-40"><span>{dino.id}</span><span>{dino.status}</span></div>
+                  <div className="flex gap-3 text-[7px] uppercase tracking-tighter opacity-40"><span>{dino.id}</span><span>{dino.status}</span><span className={
+                    dino.threatLevel === 'Extreme' ? 'text-biosyn-alert animate-pulse' :
+                    dino.threatLevel === 'High' ? 'text-biosyn-alert' :
+                    dino.threatLevel === 'Medium' ? 'text-biosyn-amber' :
+                    'text-green-400'
+                  }>{dino.threatLevel}</span></div>
                 </div>
               </div>
             ))}
